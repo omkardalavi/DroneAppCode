@@ -1,0 +1,115 @@
+import pygame
+import math
+
+# Define constants for the simulation
+WIDTH = 800
+HEIGHT = 600
+SIDE_LENGTH = 6.5
+HEIGHT_ABOVE_GROUND = 5
+SPEED = 2
+
+# Initialize pygame and create a window
+pygame.init()
+screen = pygame.display.set_mode((WIDTH, HEIGHT))
+pygame.display.set_caption("Drone Simulation")
+
+# Define the drone class
+class Drone:
+    def __init__(self, x, y, height):
+        self.x = x
+        self.y = y
+        self.height = height
+
+    def move(self, dx, dy, dh):
+        self.x += dx
+        self.y += dy
+        self.height += dh
+
+    def draw(self):
+        pygame.draw.circle(screen, (255, 0, 0), (int(self.x), int(self.y)), 5)
+
+# Define the main function
+def main():
+    # Create the drone object and set its initial position
+    drone = Drone(WIDTH/2, HEIGHT/2, HEIGHT_ABOVE_GROUND)
+
+    trajectory = [(WIDTH / 2 - SIDE_LENGTH / 2, HEIGHT / 2 - SIDE_LENGTH / 2, HEIGHT_ABOVE_GROUND),
+                  (WIDTH / 2 + SIDE_LENGTH / 2, HEIGHT / 2 - SIDE_LENGTH / 2, HEIGHT_ABOVE_GROUND),
+                  (WIDTH / 2 + SIDE_LENGTH / 2, HEIGHT / 2 + SIDE_LENGTH / 2, HEIGHT_ABOVE_GROUND),
+                  (WIDTH / 2 - SIDE_LENGTH / 2, HEIGHT / 2 + SIDE_LENGTH / 2, HEIGHT_ABOVE_GROUND),
+                  (WIDTH / 2 - SIDE_LENGTH / 2, HEIGHT / 2 - SIDE_LENGTH / 2, HEIGHT_ABOVE_GROUND)]
+
+    # Takeoff the drone to initial height
+    drone.move(0, 0, HEIGHT_ABOVE_GROUND)
+
+    clock = pygame.time.Clock()
+
+    # Start the simulation loop
+    i = 0
+    while True:
+        # Check for quit events
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                return
+
+        # Get the next waypoint
+        target_x, target_y, target_height = trajectory[i]
+
+        # Calculate the distance to the target
+        dx = target_x - drone.x
+        dy = target_y - drone.y
+        distance = math.sqrt(dx**2 + dy**2)
+
+        # Calculate the direction to the target
+        if distance > 0:
+            direction_x = dx / distance
+            direction_y = dy / distance
+        else:
+            direction_x = 0
+            direction_y = 0
+
+        # Calculate the height difference to the target
+        height_difference = target_height - drone.height
+
+        # Calculate the total movement vector
+        dx_total = SPEED * direction_x
+        dy_total = SPEED * direction_y
+        dh_total = SPEED * height_difference / distance if distance > 0 else 0
+
+        # Move the drone
+        drone.move(dx_total, dy_total, dh_total)
+
+        # Draw the drone and the trajectory
+        screen.fill((255, 255, 255))
+        for j in range(i+1):
+            pygame.draw.circle(screen, (0, 0, 255), trajectory[j][:2], 3)
+        drone.draw()
+        pygame.display.flip()
+
+        # Check if the drone has reached the target
+        if distance < SPEED:
+            i += 1
+            if i >= len(trajectory):
+                break
+
+        # Limit the frame rate
+        clock.tick(60)
+
+    # Land the drone
+    while drone.height > 0:
+        drone.move(0, 0,-SPEED)
+
+# Call the main function to start the simulation
+
+# Call the main function to start the simulation
+if __name__ == '__main__':
+    main()
+
+    # Wait for the user to close the window
+    running = True
+    while running:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+    pygame.quit()
